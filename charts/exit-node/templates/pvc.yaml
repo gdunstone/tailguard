@@ -1,0 +1,26 @@
+{{- if eq .Values.tailscaleState.type "PersistentVolumeClaim" }}
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.36.1-standalone-strict/persistentvolumeclaim-v1.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "exit-node.tailscaleState" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "exit-node.labels" . | nindent 4 }}
+  {{- with .Values.tailscaleState.annotations }}
+  annotations:
+    helm.sh/resource-policy: keep
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - ReadWriteOncePod
+  resources:
+    requests:
+      storage: 10Mi
+  {{- with .Values.tailscaleState.storageClassName }}
+  storageClassName: {{ . }}
+  {{ end }}
+  volumeMode: Filesystem
+{{- end }}

@@ -1,0 +1,127 @@
+# Default values for exit-node.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+loginServer:
+  value: ""
+  # valueFrom:
+  #   secretKeyRef:
+  #     name: exit-nodes-authkey
+  #     key: ts-login-server
+
+preAuthKey:
+  value: ""
+  # valueFrom:
+  #   secretKeyRef:
+  #     name: exit-nodes-authkey
+  #     key: ts-auth-key
+
+wireguardConfig: ""
+# wireguardConfig: |-
+#   [Interface]
+#   PrivateKey = bm90IHRvZGF5LCBqZXN1cwo=
+#   Address = 10.2.0.2/32, 2000:b000::2:2/128
+#   DNS = 10.2.0.1, 2000:b000::2:1
+#
+#   [Peer]
+#   PublicKey = bm90IHRvZGF5Cg==
+#   AllowedIPs = 0.0.0.0/0, ::/0
+#   Endpoint = 00.00.00.00:51820
+#
+#   PersistentKeepalive = 25
+
+# Note: setting tsMgrConfig will enable tailscale-manager if the image is built with it
+tsMgrConfig: ""
+# tsMgrConfig: |-
+#   routes:
+#     - "172.16.0.0/22"
+#     - "192.168.0.0/24"
+#   hostRoutes:
+#     - "special-hostname1.example"
+#     - "special-hostname2.example"
+#   awsManagedPrefixLists:
+#     - "pl-02761f4a40454a3c9"
+#   extraArgs:
+#     - "--webclient"
+
+tailscaleState:
+  type: PersistentVolumeClaim
+  # storageClassName: "longhorn"
+  # using a secret for tailscaleState doesn't work yet.
+  # type: Secret
+  # secretName: secret-name
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: ghcr.io/juhovh/tailguard
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  # tag: v1.96.4
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext:
+  sysctls:
+    - name: net.ipv4.ip_forward
+      value: "1"
+    - name: net.ipv6.conf.all.forwarding
+      value: "1"
+
+securityContext:
+  privileged: true
+  capabilities:
+    add:
+      - NET_ADMIN
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+# livenessProbe:
+#   httpGet:
+#     path: /
+#     port: http
+# readinessProbe:
+#   httpGet:
+#     path: /
+#     port: http
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+  # - name: foo
+  #   secret:
+  #     secretName: mysecret
+  #     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+  # - name: foo
+  #   mountPath: "/etc/foo"
+  #   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

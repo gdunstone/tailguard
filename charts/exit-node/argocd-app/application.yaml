@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/argoproj.io/application_v1alpha1.json
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: exit-node-1
+  namespace: argocd
+  labels:
+    name: exit-node-1
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/gdunstone/tailguard.git
+    name: tailguard
+    targetRevision: main
+    path: charts/exit-node
+    helm:
+      valuesObject:
+        # obvously you will need to add your own config, this one is clearly fake
+        wireguardConfig: |-
+          [Interface]
+          PrivateKey = bm90IHRvZGF5LCBqZXN1cwo=
+          Address = 10.2.0.2/32, 2000:b000::2:2/128
+          DNS = 10.2.0.1, 2000:b000::2:1
+
+          [Peer]
+          PublicKey = bm90IHRvZGF5Cg==
+          AllowedIPs = 0.0.0.0/0, ::/0
+          Endpoint = 00.00.00.00:51820
+
+          PersistentKeepalive = 25
+        # you will also need to add your preAuthKey
+        preAuthKey:
+          value: ""
+  destination:
+    name: in-cluster
+    namespace: exit-nodes

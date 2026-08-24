@@ -1,0 +1,124 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.36.1-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "exit-node.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "exit-node.labels" . | nindent 4 }}
+  annotations:
+    secret.reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "exit-node.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "exit-node.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Always
+      serviceAccountName: {{ include "exit-node.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: copy-wg0
+          image: busybox:1.35
+          command: ['sh', '-c', 'cp /tmp/* /etc/wireguard/']
+          volumeMounts:
+            - name: config
+              mountPath: /etc/wireguard
+            - name: wg0
+              mountPath: /tmp
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ include "exit-node.fullname" . }}-env
+          env:
+            {{- with .Values.preAuthKey.valueFrom }}
+            - name: TS_AUTHKEY
+              valueFrom:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.loginServer.valueFrom }}
+            - name: TS_LOGIN_SERVER
+              valueFrom:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if eq .Values.tailscaleState.type "PersistentVolumeClaim" }}
+            - name: state
+              mountPath: /tailguard/state
+            {{- end }}
+            - name: config
+              mountPath: /etc/wireguard
+            - name: tun
+              mountPath: /dev/net/tun
+      volumes:
+        {{- if eq .Values.tailscaleState.type "PersistentVolumeClaim" }}
+        - name: state
+          persistentVolumeClaim:
+            claimName: {{ include "exit-node.tailscaleState" . }}
+        {{- end }}
+        - name: wg0
+          secret:
+            secretName: {{ include "exit-node.fullname" . }}-wireguard
+        - name: config
+          emptyDir:
+            sizeLimit: 1Mi
+        - name: tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

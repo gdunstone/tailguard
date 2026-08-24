@@ -1,0 +1,2 @@
+Check your tailnet for the exit node named:
+  {{ .Release.Name }}
