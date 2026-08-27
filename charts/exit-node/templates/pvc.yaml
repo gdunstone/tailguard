@@ -8,6 +8,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "exit-node.labels" . | nindent 4 }}
+    {{- with .Values.tailscaleState.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
   {{- with .Values.tailscaleState.annotations }}
   annotations:
     helm.sh/resource-policy: keep
